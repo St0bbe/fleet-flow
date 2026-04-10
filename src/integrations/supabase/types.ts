@@ -14,16 +14,246 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      checklist_items: {
+        Row: {
+          created_at: string
+          id: string
+          position: number
+          question: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          position?: number
+          question: string
+          type?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          position?: number
+          question?: string
+          type?: string
+        }
+        Relationships: []
+      }
+      drivers: {
+        Row: {
+          avatar: string | null
+          created_at: string
+          email: string
+          id: string
+          name: string
+          phone: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          avatar?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          name: string
+          phone?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          avatar?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          phone?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      missions: {
+        Row: {
+          checklist_in: Json | null
+          checklist_out: Json | null
+          created_at: string
+          driver_id: string
+          end_date: string | null
+          id: string
+          notes_in: string | null
+          notes_out: string | null
+          objective: string
+          odometer_end: number | null
+          odometer_start: number
+          photos_in: string[] | null
+          photos_out: string[] | null
+          pickup_location: string
+          return_location: string | null
+          route: Json | null
+          start_date: string
+          status: string
+          updated_at: string
+          vehicle_id: string
+        }
+        Insert: {
+          checklist_in?: Json | null
+          checklist_out?: Json | null
+          created_at?: string
+          driver_id: string
+          end_date?: string | null
+          id?: string
+          notes_in?: string | null
+          notes_out?: string | null
+          objective: string
+          odometer_end?: number | null
+          odometer_start: number
+          photos_in?: string[] | null
+          photos_out?: string[] | null
+          pickup_location: string
+          return_location?: string | null
+          route?: Json | null
+          start_date?: string
+          status?: string
+          updated_at?: string
+          vehicle_id: string
+        }
+        Update: {
+          checklist_in?: Json | null
+          checklist_out?: Json | null
+          created_at?: string
+          driver_id?: string
+          end_date?: string | null
+          id?: string
+          notes_in?: string | null
+          notes_out?: string | null
+          objective?: string
+          odometer_end?: number | null
+          odometer_start?: number
+          photos_in?: string[] | null
+          photos_out?: string[] | null
+          pickup_location?: string
+          return_location?: string | null
+          route?: Json | null
+          start_date?: string
+          status?: string
+          updated_at?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "missions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "missions_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          id: string
+          must_change_password: boolean
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          must_change_password?: boolean
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          must_change_password?: boolean
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      vehicles: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          model: string
+          photo: string | null
+          plate: string
+          status: string
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          color: string
+          created_at?: string
+          id?: string
+          model: string
+          photo?: string | null
+          plate: string
+          status?: string
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          model?: string
+          photo?: string | null
+          plate?: string
+          status?: string
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "driver"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +380,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "driver"],
+    },
   },
 } as const
