@@ -6,6 +6,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { generateMissionPDF } from '@/lib/generatePDF';
 
 interface MissionDetailProps {
   mission: Mission;
@@ -58,7 +59,7 @@ export function MissionDetail({ mission, onBack }: MissionDetailProps) {
   }, [mission.route]);
 
   const handleExportPDF = () => {
-    window.print();
+    generateMissionPDF(mission);
   };
 
   return (
