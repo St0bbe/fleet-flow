@@ -1,9 +1,11 @@
 import { useEffect, useState, useRef } from 'react';
 import { useApp } from '@/contexts/AppContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { MapPin, Navigation, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
+import { TransferMission } from './TransferMission';
 
 interface Props {
   onFinish: () => void;
@@ -11,10 +13,21 @@ interface Props {
 
 export function MissionTracking({ onFinish }: Props) {
   const { activeMission, setActiveMission } = useApp();
+  const { user, driverRecord } = useAuth();
   const [position, setPosition] = useState<[number, number] | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const [tracking, setTracking] = useState(true);
   const routeRef = useRef<[number, number][]>(activeMission?.route || []);
+  const [missionType, setMissionType] = useState<string>('standard');
+
+  // Fetch mission type
+  useEffect(() => {
+    if (!activeMission) return;
+    supabase.from('missions').select('mission_type').eq('id', activeMission.id).single()
+      .then(({ data }) => {
+        if (data) setMissionType((data as any).mission_type || 'standard');
+      });
+  }, [activeMission?.id]);
 
   useEffect(() => {
     if (!tracking) return;
@@ -26,12 +39,22 @@ export function MissionTracking({ onFinish }: Props) {
         if (activeMission) {
           setActiveMission((prev) => prev ? { ...prev, route: routeRef.current } : prev);
         }
-        // Periodically save route to DB
+        // Save route periodically
         if (activeMission && routeRef.current.length % 5 === 0) {
           supabase.from('missions')
             .update({ route: routeRef.current as any })
             .eq('id', activeMission.id)
             .then();
+        }
+        // Update driver location
+        if (user && driverRecord) {
+          supabase.from('driver_locations').upsert({
+            driver_id: driverRecord.id,
+            user_id: user.id,
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+            last_updated: new Date().toISOString(),
+          }, { onConflict: 'driver_id' }).then();
         }
       },
       (err) => console.warn('Geolocation error:', err),
@@ -54,7 +77,6 @@ export function MissionTracking({ onFinish }: Props) {
 
   const handleFinish = async () => {
     setTracking(false);
-    // Save final route
     if (activeMission) {
       await supabase.from('missions')
         .update({ route: routeRef.current as any })
@@ -104,6 +126,13 @@ export function MissionTracking({ onFinish }: Props) {
           <span className="font-mono font-bold">{routeRef.current.length}</span>
         </div>
       </div>
+
+      {/* Transfer stages */}
+      {missionType === 'transfer' && activeMission && (
+        <div className="w-full max-w-md">
+          <TransferMission missionId={activeMission.id} isOwner={true} />
+        </div>
+      )}
 
       <Button
         size="lg"
