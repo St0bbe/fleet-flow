@@ -1,8 +1,11 @@
+import { useEffect, useRef } from 'react';
 import { Mission } from '@/types/fleet';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Download, CheckCircle, XCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 interface MissionDetailProps {
   mission: Mission;
@@ -10,8 +13,51 @@ interface MissionDetailProps {
 }
 
 export function MissionDetail({ mission, onBack }: MissionDetailProps) {
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstance = useRef<L.Map | null>(null);
+
+  useEffect(() => {
+    if (!mapRef.current || mission.route.length === 0) return;
+    if (mapInstance.current) {
+      mapInstance.current.remove();
+    }
+
+    const map = L.map(mapRef.current).setView(
+      [mission.route[0][0], mission.route[0][1]],
+      13
+    );
+    mapInstance.current = map;
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors',
+    }).addTo(map);
+
+    // Draw route polyline
+    const latlngs = mission.route.map(([lat, lng]) => [lat, lng] as L.LatLngTuple);
+    const polyline = L.polyline(latlngs, { color: 'hsl(215, 80%, 28%)', weight: 4, opacity: 0.8 }).addTo(map);
+
+    // Start marker
+    L.circleMarker([mission.route[0][0], mission.route[0][1]], {
+      radius: 8, fillColor: '#22c55e', color: '#fff', weight: 2, fillOpacity: 1,
+    }).addTo(map).bindPopup('Início');
+
+    // End marker
+    const last = mission.route[mission.route.length - 1];
+    L.circleMarker([last[0], last[1]], {
+      radius: 8, fillColor: '#ef4444', color: '#fff', weight: 2, fillOpacity: 1,
+    }).addTo(map).bindPopup('Fim');
+
+    map.fitBounds(polyline.getBounds(), { padding: [30, 30] });
+
+    return () => {
+      if (mapInstance.current) {
+        mapInstance.current.remove();
+        mapInstance.current = null;
+      }
+    };
+  }, [mission.route]);
+
   const handleExportPDF = () => {
-    // Placeholder - will implement PDF generation
     window.print();
   };
 
@@ -23,12 +69,23 @@ export function MissionDetail({ mission, onBack }: MissionDetailProps) {
         </Button>
         <div className="flex-1">
           <h1 className="text-2xl font-heading font-bold">{mission.objective}</h1>
-          <p className="text-muted-foreground">Missão #{mission.id}</p>
+          <p className="text-muted-foreground">Missão #{mission.id.slice(0, 8)}</p>
         </div>
         <Button variant="outline" onClick={handleExportPDF}>
           <Download className="w-4 h-4 mr-2" /> Exportar PDF
         </Button>
       </div>
+
+      {/* Route Map */}
+      {mission.route.length > 0 && (
+        <div className="glass-card rounded-xl overflow-hidden">
+          <div className="p-4 border-b border-border">
+            <h3 className="font-heading font-semibold">Rota Percorrida</h3>
+            <p className="text-xs text-muted-foreground">{mission.route.length} pontos rastreados</p>
+          </div>
+          <div ref={mapRef} className="h-[300px] md:h-[400px] w-full" />
+        </div>
+      )}
 
       {/* Info grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

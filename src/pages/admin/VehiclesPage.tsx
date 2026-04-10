@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { StatusBadge } from '@/components/shared/StatusBadge';
-import { Vehicle, VehicleStatus } from '@/types/fleet';
+import { VehicleStatus } from '@/types/fleet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,50 +10,55 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function VehiclesPage() {
-  const { vehicles, setVehicles } = useApp();
+  const { vehicles, refreshData } = useApp();
   const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState<Vehicle | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ model: '', plate: '', color: '', year: '', status: 'available' as VehicleStatus });
 
   const resetForm = () => {
     setForm({ model: '', plate: '', color: '', year: '', status: 'available' });
-    setEditing(null);
+    setEditingId(null);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.model || !form.plate) {
       toast.error('Preencha modelo e placa');
       return;
     }
-    if (editing) {
-      setVehicles((prev) =>
-        prev.map((v) => (v.id === editing.id ? { ...v, ...form, year: Number(form.year) } : v))
-      );
+    if (editingId) {
+      const { error } = await supabase.from('vehicles').update({
+        model: form.model, plate: form.plate, color: form.color,
+        year: Number(form.year), status: form.status,
+      }).eq('id', editingId);
+      if (error) { toast.error('Erro ao atualizar'); return; }
       toast.success('Veículo atualizado');
     } else {
-      const newVehicle: Vehicle = {
-        id: Date.now().toString(),
-        ...form,
-        year: Number(form.year),
-      };
-      setVehicles((prev) => [...prev, newVehicle]);
+      const { error } = await supabase.from('vehicles').insert({
+        model: form.model, plate: form.plate, color: form.color,
+        year: Number(form.year), status: form.status,
+      });
+      if (error) { toast.error('Erro ao adicionar'); return; }
       toast.success('Veículo adicionado');
     }
     resetForm();
     setOpen(false);
+    await refreshData();
   };
 
-  const handleEdit = (v: Vehicle) => {
+  const handleEdit = (v: typeof vehicles[0]) => {
     setForm({ model: v.model, plate: v.plate, color: v.color, year: String(v.year), status: v.status });
-    setEditing(v);
+    setEditingId(v.id);
     setOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    setVehicles((prev) => prev.filter((v) => v.id !== id));
+  const handleDelete = async (id: string) => {
+    const { error } = await supabase.from('vehicles').delete().eq('id', id);
+    if (error) { toast.error('Erro ao remover'); return; }
     toast.success('Veículo removido');
+    await refreshData();
   };
 
   return (
@@ -69,7 +74,7 @@ export default function VehiclesPage() {
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{editing ? 'Editar Veículo' : 'Adicionar Veículo'}</DialogTitle>
+              <DialogTitle>{editingId ? 'Editar Veículo' : 'Adicionar Veículo'}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 mt-4">
               <div><Label>Modelo</Label><Input value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} placeholder="Toyota Hilux" /></div>
@@ -89,7 +94,7 @@ export default function VehiclesPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <Button onClick={handleSave} className="w-full">{editing ? 'Salvar Alterações' : 'Adicionar'}</Button>
+              <Button onClick={handleSave} className="w-full">{editingId ? 'Salvar Alterações' : 'Adicionar'}</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -106,9 +111,7 @@ export default function VehiclesPage() {
               <StatusBadge status={v.status} />
             </div>
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <span>{v.color}</span>
-              <span>•</span>
-              <span>{v.year}</span>
+              <span>{v.color}</span><span>•</span><span>{v.year}</span>
             </div>
             <div className="flex gap-2 pt-2 border-t border-border/50">
               <Button variant="outline" size="sm" onClick={() => handleEdit(v)}>
