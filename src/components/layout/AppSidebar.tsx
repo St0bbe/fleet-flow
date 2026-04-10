@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useApp } from '@/contexts/AppContext';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   LayoutDashboard,
   Car,
@@ -29,7 +30,8 @@ const driverLinks = [
 ];
 
 export function AppSidebar() {
-  const { role, setRole } = useApp();
+  const { role } = useApp();
+  const { signOut, user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
@@ -79,17 +81,20 @@ export function AppSidebar() {
 
       {/* Footer */}
       <div className="p-2 border-t border-sidebar-border space-y-1">
+        {!collapsed && user && (
+          <div className="px-3 py-2 text-xs text-sidebar-foreground/70 truncate">
+            {user.email}
+          </div>
+        )}
         <button
-          onClick={() => {
-            setRole(role === 'admin' ? 'driver' : 'admin');
+          onClick={async () => {
+            await signOut();
             navigate('/');
           }}
           className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors"
         >
           <LogOut className="w-5 h-5 flex-shrink-0" />
-          {!collapsed && (
-            <span>Mudar para {role === 'admin' ? 'Motorista' : 'Admin'}</span>
-          )}
+          {!collapsed && <span>Sair</span>}
         </button>
         <button
           onClick={() => setCollapsed(!collapsed)}

@@ -1,35 +1,38 @@
 import { useState } from 'react';
 import { useApp } from '@/contexts/AppContext';
-import { ChecklistItem } from '@/types/fleet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Trash2, GripVertical } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function ChecklistConfigPage() {
-  const { checklistItems, setChecklistItems } = useApp();
+  const { checklistItems, refreshData } = useApp();
   const [newQuestion, setNewQuestion] = useState('');
   const [newType, setNewType] = useState<'boolean' | 'text' | 'number'>('boolean');
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!newQuestion.trim()) {
       toast.error('Digite uma pergunta');
       return;
     }
-    const item: ChecklistItem = {
-      id: Date.now().toString(),
+    const { error } = await supabase.from('checklist_items').insert({
       question: newQuestion.trim(),
       type: newType,
-    };
-    setChecklistItems((prev) => [...prev, item]);
+      position: checklistItems.length,
+    });
+    if (error) { toast.error('Erro ao adicionar'); return; }
     setNewQuestion('');
     toast.success('Item adicionado');
+    await refreshData();
   };
 
-  const handleRemove = (id: string) => {
-    setChecklistItems((prev) => prev.filter((i) => i.id !== id));
+  const handleRemove = async (id: string) => {
+    const { error } = await supabase.from('checklist_items').delete().eq('id', id);
+    if (error) { toast.error('Erro ao remover'); return; }
     toast.success('Item removido');
+    await refreshData();
   };
 
   return (
@@ -39,7 +42,6 @@ export default function ChecklistConfigPage() {
         <p className="text-muted-foreground mt-1">Defina as perguntas do checklist de retirada e devolução</p>
       </div>
 
-      {/* Add new */}
       <div className="glass-card rounded-xl p-5">
         <h2 className="font-heading font-semibold mb-4">Novo Item</h2>
         <div className="flex flex-col sm:flex-row gap-3">
@@ -51,9 +53,7 @@ export default function ChecklistConfigPage() {
             onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
           />
           <Select value={newType} onValueChange={(v) => setNewType(v as typeof newType)}>
-            <SelectTrigger className="w-full sm:w-36">
-              <SelectValue />
-            </SelectTrigger>
+            <SelectTrigger className="w-full sm:w-36"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="boolean">Sim/Não</SelectItem>
               <SelectItem value="text">Texto</SelectItem>
@@ -64,7 +64,6 @@ export default function ChecklistConfigPage() {
         </div>
       </div>
 
-      {/* List */}
       <div className="glass-card rounded-xl overflow-hidden">
         <div className="p-5 border-b border-border">
           <h2 className="font-heading font-semibold">{checklistItems.length} itens no checklist</h2>

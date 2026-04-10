@@ -31,7 +31,6 @@ export default function Dashboard() {
         <StatCard title="Missões Concluídas" value={completedMissions} icon={CheckCircle} variant="default" />
       </motion.div>
 
-      {/* Recent vehicles */}
       <div className="glass-card rounded-xl overflow-hidden">
         <div className="p-5 border-b border-border">
           <h2 className="text-lg font-heading font-semibold">Veículos da Frota</h2>
@@ -57,6 +56,9 @@ export default function Dashboard() {
                   <td className="px-5 py-3.5"><StatusBadge status={v.status} /></td>
                 </tr>
               ))}
+              {vehicles.length === 0 && (
+                <tr><td colSpan={5} className="text-center py-8 text-muted-foreground">Nenhum veículo cadastrado</td></tr>
+              )}
             </tbody>
           </table>
         </div>

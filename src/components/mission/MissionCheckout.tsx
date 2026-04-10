@@ -8,20 +8,21 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Camera, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Props {
   onComplete: () => void;
 }
 
 export function MissionCheckout({ onComplete }: Props) {
-  const { activeMission, setActiveMission, setMissions, setVehicles, checklistItems } = useApp();
+  const { activeMission, setActiveMission, checklistItems, refreshData } = useApp();
   const [odometerEnd, setOdometerEnd] = useState('');
   const [returnLocation, setReturnLocation] = useState('');
   const [notes, setNotes] = useState('');
   const [answers, setAnswers] = useState<Record<string, string | boolean>>({});
   const [step, setStep] = useState<'info' | 'checklist' | 'photos'>('info');
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
     if (!odometerEnd || !returnLocation) {
       toast.error('Preencha km final e local de devolução');
       return;
@@ -34,20 +35,25 @@ export function MissionCheckout({ onComplete }: Props) {
     }));
 
     if (activeMission) {
-      const updated = {
-        ...activeMission,
-        odometerEnd: Number(odometerEnd),
-        returnLocation,
-        endDate: new Date().toISOString(),
-        checklistOut: checklistAnswers,
-        notesOut: notes,
-        photosOut: [],
-        status: 'completed' as const,
-      };
+      const { error } = await supabase.from('missions').update({
+        odometer_end: Number(odometerEnd),
+        return_location: returnLocation,
+        end_date: new Date().toISOString(),
+        checklist_out: checklistAnswers as any,
+        notes_out: notes,
+        photos_out: [],
+        status: 'completed',
+      }).eq('id', activeMission.id);
 
-      setMissions((prev) => prev.map((m) => m.id === activeMission.id ? updated : m));
-      setVehicles((prev) => prev.map((v) => v.id === activeMission.vehicleId ? { ...v, status: 'available' as const } : v));
+      if (error) {
+        toast.error('Erro ao finalizar missão');
+        return;
+      }
+
+      // Release vehicle
+      await supabase.from('vehicles').update({ status: 'available' }).eq('id', activeMission.vehicleId);
       setActiveMission(null);
+      await refreshData();
     }
 
     toast.success('Missão concluída com sucesso!');

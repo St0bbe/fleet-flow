@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useApp } from '@/contexts/AppContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { ChecklistAnswer, Mission } from '@/types/fleet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,13 +10,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { ArrowRight, Camera } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Props {
   onComplete: () => void;
 }
 
 export function MissionCheckin({ onComplete }: Props) {
-  const { vehicles, checklistItems, setActiveMission, setMissions, setVehicles } = useApp();
+  const { vehicles, checklistItems, setActiveMission, refreshData } = useApp();
+  const { driverRecord } = useAuth();
   const availableVehicles = vehicles.filter((v) => v.status === 'available');
 
   const [vehicleId, setVehicleId] = useState('');
@@ -38,7 +41,12 @@ export function MissionCheckin({ onComplete }: Props) {
     setStep('photos');
   };
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
+    if (!driverRecord) {
+      toast.error('Erro: motorista não identificado');
+      return;
+    }
+
     const vehicle = vehicles.find((v) => v.id === vehicleId)!;
     const checklistAnswers: ChecklistAnswer[] = checklistItems.map((item) => ({
       itemId: item.id,
@@ -46,16 +54,37 @@ export function MissionCheckin({ onComplete }: Props) {
       answer: answers[item.id] ?? (item.type === 'boolean' ? false : ''),
     }));
 
+    // Insert mission into Supabase
+    const { data: missionData, error } = await supabase.from('missions').insert({
+      driver_id: driverRecord.id,
+      vehicle_id: vehicleId,
+      objective,
+      pickup_location: pickupLocation,
+      odometer_start: Number(odometerStart),
+      checklist_in: checklistAnswers as any,
+      notes_in: notes,
+      route: [],
+      status: 'active',
+    }).select().single();
+
+    if (error) {
+      toast.error('Erro ao criar missão: ' + error.message);
+      return;
+    }
+
+    // Update vehicle status
+    await supabase.from('vehicles').update({ status: 'onroute' }).eq('id', vehicleId);
+
     const mission: Mission = {
-      id: Date.now().toString(),
-      driverId: '1',
-      driverName: 'Motorista Atual',
+      id: missionData.id,
+      driverId: driverRecord.id,
+      driverName: driverRecord.name,
       vehicleId,
       vehiclePlate: vehicle.plate,
       vehicleModel: vehicle.model,
       objective,
       pickupLocation,
-      startDate: new Date().toISOString(),
+      startDate: missionData.start_date,
       odometerStart: Number(odometerStart),
       checklistIn: checklistAnswers,
       photosIn: [],
@@ -65,8 +94,7 @@ export function MissionCheckin({ onComplete }: Props) {
     };
 
     setActiveMission(mission);
-    setMissions((prev) => [...prev, mission]);
-    setVehicles((prev) => prev.map((v) => v.id === vehicleId ? { ...v, status: 'onroute' as const } : v));
+    await refreshData();
     toast.success('Missão iniciada!');
     onComplete();
   };

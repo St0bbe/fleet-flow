@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
 import { MapPin, Navigation, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Props {
   onFinish: () => void;
@@ -13,6 +14,7 @@ export function MissionTracking({ onFinish }: Props) {
   const [position, setPosition] = useState<[number, number] | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const [tracking, setTracking] = useState(true);
+  const routeRef = useRef<[number, number][]>(activeMission?.route || []);
 
   useEffect(() => {
     if (!tracking) return;
@@ -20,15 +22,23 @@ export function MissionTracking({ onFinish }: Props) {
       (pos) => {
         const coords: [number, number] = [pos.coords.latitude, pos.coords.longitude];
         setPosition(coords);
+        routeRef.current = [...routeRef.current, coords];
         if (activeMission) {
-          setActiveMission((prev) => prev ? { ...prev, route: [...prev.route, coords] } : prev);
+          setActiveMission((prev) => prev ? { ...prev, route: routeRef.current } : prev);
+        }
+        // Periodically save route to DB
+        if (activeMission && routeRef.current.length % 5 === 0) {
+          supabase.from('missions')
+            .update({ route: routeRef.current as any })
+            .eq('id', activeMission.id)
+            .then();
         }
       },
       (err) => console.warn('Geolocation error:', err),
       { enableHighAccuracy: true, maximumAge: 5000 }
     );
     return () => navigator.geolocation.clearWatch(watchId);
-  }, [tracking, activeMission, setActiveMission]);
+  }, [tracking]);
 
   useEffect(() => {
     const interval = setInterval(() => setElapsed((e) => e + 1), 1000);
@@ -40,6 +50,17 @@ export function MissionTracking({ onFinish }: Props) {
     const m = Math.floor((seconds % 3600) / 60);
     const s = seconds % 60;
     return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
+  const handleFinish = async () => {
+    setTracking(false);
+    // Save final route
+    if (activeMission) {
+      await supabase.from('missions')
+        .update({ route: routeRef.current as any })
+        .eq('id', activeMission.id);
+    }
+    onFinish();
   };
 
   return (
@@ -80,7 +101,7 @@ export function MissionTracking({ onFinish }: Props) {
           <span className="flex items-center gap-2 text-sm text-muted-foreground">
             <Navigation className="w-4 h-4" /> Pontos rastreados
           </span>
-          <span className="font-mono font-bold">{activeMission?.route.length || 0}</span>
+          <span className="font-mono font-bold">{routeRef.current.length}</span>
         </div>
       </div>
 
@@ -88,10 +109,7 @@ export function MissionTracking({ onFinish }: Props) {
         size="lg"
         variant="destructive"
         className="text-lg px-10 py-6 rounded-xl"
-        onClick={() => {
-          setTracking(false);
-          onFinish();
-        }}
+        onClick={handleFinish}
       >
         Finalizar Missão
       </Button>
