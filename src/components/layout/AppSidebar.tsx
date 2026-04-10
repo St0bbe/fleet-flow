@@ -22,6 +22,7 @@ const adminLinks = [
   { to: '/vehicles', label: 'Frota', icon: Car },
   { to: '/drivers', label: 'Equipe', icon: Users },
   { to: '/checklist-config', label: 'Checklist', icon: ClipboardCheck },
+  { to: '/drivers-map', label: 'Mapa', icon: Map },
   { to: '/history', label: 'Histórico', icon: History },
 ];
 
