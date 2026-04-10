@@ -64,9 +64,14 @@ export default function LoginPage() {
           </Button>
         </form>
 
-        <p className="text-center text-xs text-muted-foreground">
-          Acesso restrito. Motoristas são cadastrados pelo administrador.
-        </p>
+        <div className="text-center space-y-2">
+          <a href="/forgot-password" className="text-sm text-primary hover:underline">
+            Esqueci minha senha
+          </a>
+          <p className="text-xs text-muted-foreground">
+            Acesso restrito. Motoristas são cadastrados pelo administrador.
+          </p>
+        </div>
       </div>
     </div>
   );

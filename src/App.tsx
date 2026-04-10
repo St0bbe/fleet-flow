@@ -12,8 +12,11 @@ import DriversPage from "@/pages/admin/DriversPage";
 import ChecklistConfigPage from "@/pages/admin/ChecklistConfigPage";
 import HistoryPage from "@/pages/admin/HistoryPage";
 import MissionPage from "@/pages/driver/MissionPage";
+import DriversMapPage from "@/pages/driver/DriversMapPage";
 import LoginPage from "@/pages/auth/LoginPage";
 import ChangePasswordPage from "@/pages/auth/ChangePasswordPage";
+import ForgotPasswordPage from "@/pages/auth/ForgotPasswordPage";
+import ResetPasswordPage from "@/pages/auth/ResetPasswordPage";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
 
@@ -52,6 +55,7 @@ function AppRoutes() {
         <Route path="/checklist-config" element={<ChecklistConfigPage />} />
         <Route path="/history" element={<HistoryPage />} />
         <Route path="/mission" element={<MissionPage />} />
+        <Route path="/drivers-map" element={<DriversMapPage />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>
@@ -64,9 +68,15 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <AuthProvider>
-          <AuthGate />
-        </AuthProvider>
+        <Routes>
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="*" element={
+            <AuthProvider>
+              <AuthGate />
+            </AuthProvider>
+          } />
+        </Routes>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

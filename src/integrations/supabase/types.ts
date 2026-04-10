@@ -38,6 +38,41 @@ export type Database = {
         }
         Relationships: []
       }
+      driver_locations: {
+        Row: {
+          driver_id: string
+          id: string
+          last_updated: string
+          latitude: number
+          longitude: number
+          user_id: string
+        }
+        Insert: {
+          driver_id: string
+          id?: string
+          last_updated?: string
+          latitude: number
+          longitude: number
+          user_id: string
+        }
+        Update: {
+          driver_id?: string
+          id?: string
+          last_updated?: string
+          latitude?: number
+          longitude?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_locations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       drivers: {
         Row: {
           avatar: string | null
@@ -71,6 +106,62 @@ export type Database = {
         }
         Relationships: []
       }
+      mission_stages: {
+        Row: {
+          arrival_time: string | null
+          created_at: string
+          departure_time: string | null
+          destination: string
+          eta: string | null
+          id: string
+          mission_id: string
+          notes: string | null
+          origin: string
+          position: number
+          receptive: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          arrival_time?: string | null
+          created_at?: string
+          departure_time?: string | null
+          destination: string
+          eta?: string | null
+          id?: string
+          mission_id: string
+          notes?: string | null
+          origin: string
+          position?: number
+          receptive?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          arrival_time?: string | null
+          created_at?: string
+          departure_time?: string | null
+          destination?: string
+          eta?: string | null
+          id?: string
+          mission_id?: string
+          notes?: string | null
+          origin?: string
+          position?: number
+          receptive?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mission_stages_mission_id_fkey"
+            columns: ["mission_id"]
+            isOneToOne: false
+            referencedRelation: "missions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       missions: {
         Row: {
           checklist_in: Json | null
@@ -79,6 +170,7 @@ export type Database = {
           driver_id: string
           end_date: string | null
           id: string
+          mission_type: string
           notes_in: string | null
           notes_out: string | null
           objective: string
@@ -101,6 +193,7 @@ export type Database = {
           driver_id: string
           end_date?: string | null
           id?: string
+          mission_type?: string
           notes_in?: string | null
           notes_out?: string | null
           objective: string
@@ -123,6 +216,7 @@ export type Database = {
           driver_id?: string
           end_date?: string | null
           id?: string
+          mission_type?: string
           notes_in?: string | null
           notes_out?: string | null
           objective?: string

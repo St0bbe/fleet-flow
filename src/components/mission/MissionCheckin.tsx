@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { ArrowRight, Camera } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -28,6 +29,7 @@ export function MissionCheckin({ onComplete }: Props) {
   const [notes, setNotes] = useState('');
   const [answers, setAnswers] = useState<Record<string, string | boolean>>({});
   const [step, setStep] = useState<'info' | 'checklist' | 'photos'>('info');
+  const [missionType, setMissionType] = useState<'standard' | 'transfer'>('standard');
 
   const handleInfoNext = () => {
     if (!vehicleId || !objective || !pickupLocation || !odometerStart) {
@@ -65,6 +67,7 @@ export function MissionCheckin({ onComplete }: Props) {
       notes_in: notes,
       route: [],
       status: 'active',
+      mission_type: missionType,
     }).select().single();
 
     if (error) {
@@ -133,6 +136,19 @@ export function MissionCheckin({ onComplete }: Props) {
             </Select>
           </div>
           <div><Label>Objetivo da Viagem *</Label><Input value={objective} onChange={(e) => setObjective(e.target.value)} placeholder="Descreva o objetivo" /></div>
+          <div>
+            <Label>Tipo de Missão</Label>
+            <RadioGroup value={missionType} onValueChange={(v) => setMissionType(v as any)} className="flex gap-4 mt-2">
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="standard" id="standard" />
+                <Label htmlFor="standard" className="cursor-pointer">Padrão</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="transfer" id="transfer" />
+                <Label htmlFor="transfer" className="cursor-pointer">Transfer (Etapas)</Label>
+              </div>
+            </RadioGroup>
+          </div>
           <div><Label>Local de Retirada *</Label><Input value={pickupLocation} onChange={(e) => setPickupLocation(e.target.value)} placeholder="Garagem Central" /></div>
           <div><Label>Quilometragem (Hodômetro) *</Label><Input type="number" value={odometerStart} onChange={(e) => setOdometerStart(e.target.value)} placeholder="45230" /></div>
           <Button onClick={handleInfoNext} className="w-full">Próximo <ArrowRight className="w-4 h-4 ml-2" /></Button>
