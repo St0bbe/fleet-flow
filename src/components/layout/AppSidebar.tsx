@@ -12,6 +12,7 @@ import {
   ChevronRight,
   LogOut,
   Truck,
+  Map,
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -26,6 +27,7 @@ const adminLinks = [
 
 const driverLinks = [
   { to: '/mission', label: 'Missão', icon: MapPin },
+  { to: '/drivers-map', label: 'Mapa', icon: Map },
   { to: '/history', label: 'Histórico', icon: History },
 ];
 
