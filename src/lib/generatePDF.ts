@@ -4,7 +4,7 @@ import { Mission } from '@/types/fleet';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-export function generateMissionPDF(mission: Mission) {
+export function generateMissionPDF(mission: Mission, mapImageDataUrl?: string) {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   let y = 20;
@@ -50,6 +50,19 @@ export function generateMissionPDF(mission: Mission) {
   });
 
   y = (doc as any).lastAutoTable.finalY + 10;
+
+  // Route Map Image
+  if (mapImageDataUrl) {
+    if (y > 140) { doc.addPage(); y = 20; }
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Rota Percorrida', 14, y);
+    y += 5;
+    const imgWidth = pageWidth - 28;
+    const imgHeight = imgWidth * 0.5;
+    doc.addImage(mapImageDataUrl, 'PNG', 14, y, imgWidth, imgHeight);
+    y += imgHeight + 10;
+  }
 
   // Checklist In
   if (mission.checklistIn.length > 0) {
