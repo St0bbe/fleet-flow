@@ -73,7 +73,7 @@ export function MobileBottomNav() {
               </button>
             );
           })}
-          {hasOverflow && (
+          {hasMore && (
             <button
               onClick={() => setMoreOpen(true)}
               className={cn(
