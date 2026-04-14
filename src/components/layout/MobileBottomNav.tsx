@@ -49,7 +49,7 @@ export function MobileBottomNav() {
   const maxVisible = 4;
   const visibleLinks = allLinks.slice(0, maxVisible);
   const overflowLinks = allLinks.slice(maxVisible);
-  const hasOverflow = overflowLinks.length > 0;
+  const hasMore = overflowLinks.length > 0 || true; // always show "more" for logout access
 
   return (
     <>
