@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Mission } from '@/types/fleet';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Download, CheckCircle, XCircle } from 'lucide-react';
+import { ArrowLeft, Download, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import html2canvas from 'html2canvas';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import L from 'leaflet';
@@ -16,6 +17,7 @@ interface MissionDetailProps {
 export function MissionDetail({ mission, onBack }: MissionDetailProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<L.Map | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     if (!mapRef.current || mission.route.length === 0) return;
@@ -58,8 +60,26 @@ export function MissionDetail({ mission, onBack }: MissionDetailProps) {
     };
   }, [mission.route]);
 
-  const handleExportPDF = () => {
-    generateMissionPDF(mission);
+  const handleExportPDF = async () => {
+    setExporting(true);
+    try {
+      let mapImage: string | undefined;
+      if (mapRef.current) {
+        const canvas = await html2canvas(mapRef.current, {
+          useCORS: true,
+          allowTaint: true,
+          scale: 2,
+          logging: false,
+        });
+        mapImage = canvas.toDataURL('image/png');
+      }
+      generateMissionPDF(mission, mapImage);
+    } catch (e) {
+      console.error('Erro ao capturar mapa:', e);
+      generateMissionPDF(mission);
+    } finally {
+      setExporting(false);
+    }
   };
 
   return (
@@ -72,8 +92,9 @@ export function MissionDetail({ mission, onBack }: MissionDetailProps) {
           <h1 className="text-2xl font-heading font-bold">{mission.objective}</h1>
           <p className="text-muted-foreground">Missão #{mission.id.slice(0, 8)}</p>
         </div>
-        <Button variant="outline" onClick={handleExportPDF}>
-          <Download className="w-4 h-4 mr-2" /> Exportar PDF
+        <Button variant="outline" onClick={handleExportPDF} disabled={exporting}>
+          {exporting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
+          Exportar PDF
         </Button>
       </div>
 
